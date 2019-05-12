@@ -20,6 +20,8 @@
 
 package com.denizoncoding.androidopenslsample;
 
+import android.media.AudioManager;
+
 public class OpenSLEngineController {
 
     static {
@@ -27,15 +29,44 @@ public class OpenSLEngineController {
         System.loadLibrary("native-lib");
     }
 
-    public native String stringFromJNI();
+    private native String stringFromJNI();
 
-    public native boolean createEngine(int sampleRate, int bufferSize);
+    private native boolean createEngine(int sampleRate, int bufferSize);
+
+    private native boolean destroyEngine();
+
+    private native void setOnOff(boolean onOff);
 
     private boolean isEngineReady = false;
 
-    public OpenSLEngineController(int sampleRate, int bufferSize) {
+    public OpenSLEngineController(AudioManager audioManager) {
+
+        //todo jellybean check
+        int sampleRate = 0;
+        int bufferSize = 0;
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+
+            String nativeParam = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+
+            sampleRate = Integer.parseInt(nativeParam);
+
+            nativeParam = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+
+            bufferSize = Integer.parseInt(nativeParam);
+        }
 
         isEngineReady = createEngine(sampleRate, bufferSize);
+    }
+
+    public void setOn(boolean onOff) {
+
+        setOnOff(onOff);
+    }
+
+    public void destroy() {
+
+        destroyEngine();
     }
 
     public String getDemoString() {

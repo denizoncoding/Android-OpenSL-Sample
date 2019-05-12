@@ -22,19 +22,30 @@
 #include <SLES/OpenSLES_Android.h>
 #include <android/log.h>
 #include <pthread.h>
+#include <malloc.h>
 
 class OpenSLEngine {
 
 public:
-    bool createEngine(int sampleRate, int bufferSize);
+    bool createEngine();
+
+    bool createAudioPlayer(int sampleRate, int bufferSize);
+
+    void setOnOff(bool onOff);
 
     bool destroyEngine();
 
 private:
 
-    SLObjectItf sl_engine_object_itf = nullptr;
-    SLEngineItf sl_engine_engine_itf = nullptr;
-    SLObjectItf sl_output_mix_object_itf = nullptr;
+    SLObjectItf slEngineObject = nullptr;
+    SLEngineItf slEngineInterface = nullptr;
+
+    SLObjectItf slOutputMixObjInterface = nullptr;
+    SLEnvironmentalReverbItf slReverbInterface = nullptr;
+
+    SLObjectItf slPcmObjInterface = nullptr;
+    SLPlayItf slPcmPlayerInterface = nullptr;
+    SLVolumeItf slPcmVolumeInterface = nullptr;
 };
 
 

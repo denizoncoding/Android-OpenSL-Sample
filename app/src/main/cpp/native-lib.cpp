@@ -4,6 +4,7 @@
 
 OpenSLEngine *engine;
 
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_stringFromJNI(
         JNIEnv *env,
@@ -12,12 +13,34 @@ Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_createEngine(
-        JNIEnv *env,
-        jobject, jint sampleRate, jint bufferSize) {
-
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_createEngine(JNIEnv *env,
+                                                                               jobject instance,
+                                                                               jint sampleRate,
+                                                                               jint bufferSize) {
     engine = new OpenSLEngine();
+    engine->createEngine();
 
-    return static_cast<jboolean>(engine->createEngine(sampleRate, bufferSize));
+    //todo: refactor
+    engine->createAudioPlayer(0, 0);
+
+    return static_cast<jboolean>(true);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_destroyEngine(JNIEnv *env,
+                                                                                jobject instance) {
+
+    engine->destroyEngine();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_setOnOff(JNIEnv *env,
+                                                                           jobject instance,
+                                                                           jboolean onOff) {
+
+    engine->setOnOff(onOff);
 }

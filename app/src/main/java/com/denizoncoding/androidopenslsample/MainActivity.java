@@ -27,13 +27,19 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private ToggleButton onOffButton;
 
     private OpenSLEngineController controller;// = new OpenSLEngineController();
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
+    private boolean isOn = false;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,24 +47,49 @@ public class MainActivity extends AppCompatActivity {
 
         createController();
 
-
         ((TextView) findViewById(R.id.sample_text)).setText(controller.getDemoString());
 
+        onOffButton = findViewById(R.id.toggleButton);
+
+        onOffButton.setOnClickListener(this);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (isOn) {
+
+            onOffButton.performClick();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        controller.destroy();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onClick(View v) {
+
+        isOn = onOffButton.isChecked();
+
+        controller.setOn(isOn);
+    }
+
     private void createController() {
 
-        AudioManager myAudioMgr = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        String nativeParam = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-        int sampleRate = Integer.parseInt(nativeParam);
-
-        nativeParam = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-
-        int bufSize = Integer.parseInt(nativeParam);
-
-        controller = new OpenSLEngineController(sampleRate, bufSize);
+        controller = new OpenSLEngineController(audioManager);
     }
 
 }
