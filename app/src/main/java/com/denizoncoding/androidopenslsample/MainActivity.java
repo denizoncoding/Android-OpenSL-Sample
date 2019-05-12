@@ -58,14 +58,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onResume() {
         super.onResume();
 
-        if (isOn) {
-
-            onOffButton.performClick();
-        }
     }
 
     @Override
     protected void onPause() {
+
+        if (isOn) {
+
+            onOffButton.performClick();
+        }
 
         super.onPause();
     }
