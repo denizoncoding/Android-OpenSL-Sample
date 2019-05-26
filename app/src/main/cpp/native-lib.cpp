@@ -20,12 +20,16 @@ Java_com_denizoncoding_androidopenslsample_OpenSLEngineController_createEngine(J
                                                                                jint sampleRate,
                                                                                jint bufferSize) {
     engine = new OpenSLEngine();
-    engine->createEngine();
 
-    //todo: refactor
-    engine->createAudioPlayer(0, 0);
+    bool isEngineCreate = engine->createEngine();
 
-    return static_cast<jboolean>(true);
+    if (!isEngineCreate) {
+
+        return false;
+    }
+
+    return engine->createAudioPlayer(sampleRate, bufferSize);
+
 }
 
 extern "C"

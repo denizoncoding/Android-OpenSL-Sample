@@ -21,16 +21,15 @@
 #include "OpenSLEngine.h"
 
 #define DEBUG_TAG "OpenSLEngine:"
+#define MILLIHERTZ_IN_HERTZ 1000
 
-//TODO: divide to functions
-//TODO: createEngine functions contains subfunctions
-//TODO: subfunctions returns related values
 
 SLAndroidSimpleBufferQueueItf pcmBufferQueue;
 uint8_t *out_buffer;
 bool temporaryOnOff = false;
 
-void bufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
+void
+bufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
 
 
     for (int i = 0; i < (1762); i++) {
@@ -100,30 +99,47 @@ bool OpenSLEngine::createAudioPlayer(int sampleRate, int bufferSize) {
 
     SLresult result;
 
-    //// to the function /////////////////////////////////////
-    //TODO get them from android side
-    out_buffer = (uint8_t *) malloc(static_cast<size_t>(44100 * 2 * 0.2f));
-    /////////////////////////////////////////////////////////
+    this->sampleRate = sampleRate;
+    this->bufferSize = bufferSize;
 
+    result = result & generateOutputBuffer();
 
-    //// to the function
-    SLInterfaceID mids[1] = {SL_IID_ENVIRONMENTALREVERB};
+    result = result & setEnviromentalReverb();
 
-    SLboolean mreq[1] = {SL_BOOLEAN_FALSE};
+    result = result & setBufferQueue();
 
-    result = (*slEngineInterface)->CreateOutputMix(slEngineInterface, &slOutputMixObjInterface, 1,
-                                                   mids, mreq);
+    result = result & setPcmInterfaces();
 
-    result = (*slOutputMixObjInterface)->Realize(slOutputMixObjInterface, SL_BOOLEAN_FALSE);
+    bufferCallBack(pcmBufferQueue, NULL);
 
+    if (result == SL_RESULT_SUCCESS) {
 
-    result = (*slOutputMixObjInterface)->GetInterface(slOutputMixObjInterface,
-                                                      SL_IID_ENVIRONMENTALREVERB,
-                                                      &slReverbInterface);
-    //////////////////////////////////////////////////////
+        __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine ready");
 
+        return true;
 
-    //// to the function ////////////////////////////////
+    } else {
+
+        return false;
+    }
+}
+
+SLresult OpenSLEngine::setPcmInterfaces() {
+
+    (*slPcmObjInterface)->Realize(slPcmObjInterface, SL_BOOLEAN_FALSE);
+    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_PLAY, &slPcmPlayerInterface);
+    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_BUFFERQUEUE, &pcmBufferQueue);
+    (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, bufferCallBack, NULL);
+    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_VOLUME, &slPcmVolumeInterface);
+    (*slPcmPlayerInterface)->SetPlayState(slPcmPlayerInterface, SL_PLAYSTATE_PLAYING);
+
+    return SL_RESULT_SUCCESS;
+}
+
+SLresult OpenSLEngine::setBufferQueue() {
+
+    SLresult result;
+
     SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, slOutputMixObjInterface};
 
     SLDataSink audioSink = {&outputMix, NULL};
@@ -132,11 +148,12 @@ bool OpenSLEngine::createAudioPlayer(int sampleRate, int bufferSize) {
             SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
             2};
 
-    //TODO: sample rate from android side
+    //TODO: sampleRate from external
     SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,
             2,
             SL_SAMPLINGRATE_44_1,
+//            ((SLuint32) sampleRate) * MILLIHERTZ_IN_HERTZ,
             SL_PCMSAMPLEFORMAT_FIXED_16,
             SL_PCMSAMPLEFORMAT_FIXED_16,
             SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
@@ -160,25 +177,46 @@ bool OpenSLEngine::createAudioPlayer(int sampleRate, int bufferSize) {
             interfaceIds,
             interfacesRequired
     );
-    //////////////////////////////////////////////////////
 
+    return result;
+}
 
-    //// to the function ////////////////////////////////
-    (*slPcmObjInterface)->Realize(slPcmObjInterface, SL_BOOLEAN_FALSE);
-    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_PLAY, &slPcmPlayerInterface);
-    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_BUFFERQUEUE, &pcmBufferQueue);
-    (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue, bufferCallBack, NULL);
-    (*slPcmObjInterface)->GetInterface(slPcmObjInterface, SL_IID_VOLUME, &slPcmVolumeInterface);
-    (*slPcmPlayerInterface)->SetPlayState(slPcmPlayerInterface, SL_PLAYSTATE_PLAYING);
-    //////////////////////////////////////////////////////
+SLresult OpenSLEngine::setEnviromentalReverb() {
 
-    __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine ready");
+    SLresult result;
 
-    bufferCallBack(pcmBufferQueue, NULL);
+    SLInterfaceID mids[1] = {SL_IID_ENVIRONMENTALREVERB};
 
-    __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine ready end");
+    SLboolean mreq[1] = {SL_BOOLEAN_FALSE};
 
-    return true;
+    result = (*slEngineInterface)->CreateOutputMix(slEngineInterface, &slOutputMixObjInterface, 1,
+                                                   mids, mreq);
+
+    if (result != SL_RESULT_SUCCESS) {
+
+        return result;
+    }
+
+    result = (*slOutputMixObjInterface)->Realize(slOutputMixObjInterface, SL_BOOLEAN_FALSE);
+
+    if (result != SL_RESULT_SUCCESS) {
+
+        return result;
+    }
+
+    result = (*slOutputMixObjInterface)->GetInterface(slOutputMixObjInterface,
+                                                      SL_IID_ENVIRONMENTALREVERB,
+                                                      &slReverbInterface);
+
+    return result;
+}
+
+SLresult OpenSLEngine::generateOutputBuffer() {
+
+    //TODO: buffersize from external
+    out_buffer = (uint8_t *) malloc(static_cast<size_t>(44100 * 2 * 0.2f));
+
+    return SL_RESULT_SUCCESS;
 }
 
 bool OpenSLEngine::destroyEngine() {

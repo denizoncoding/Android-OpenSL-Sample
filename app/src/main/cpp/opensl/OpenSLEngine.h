@@ -46,6 +46,18 @@ private:
     SLObjectItf slPcmObjInterface = nullptr;
     SLPlayItf slPcmPlayerInterface = nullptr;
     SLVolumeItf slPcmVolumeInterface = nullptr;
+
+    SLresult generateOutputBuffer();
+
+    SLresult setEnviromentalReverb();
+
+    SLresult setBufferQueue();
+
+    SLresult setPcmInterfaces();
+
+    int sampleRate;
+
+    int bufferSize;
 };
 
 
