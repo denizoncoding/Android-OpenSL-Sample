@@ -24,8 +24,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Build;
-import android.util.Log;
-import android.widget.Toast;
 
 public class OpenSLEngineController {
 
@@ -44,38 +42,16 @@ public class OpenSLEngineController {
 
     private boolean isEngineReady = false;
 
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public OpenSLEngineController(AudioManager audioManager, Context context) {
 
         /// Target Api check performed in MainActivity.
 
-        Log.v("OpenSLEngineController", "creation start");
+        int sampleRate = Integer.parseInt(audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
 
+        int framesPerBuffer = Integer.parseInt(audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            String nativeParam = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
-
-            int sampleRate = Integer.parseInt(nativeParam);
-
-            nativeParam = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-
-            int bufferSize = Integer.parseInt(nativeParam);
-
-            Log.v("OpenSLEngineController", "engine creat. start");
-
-            isEngineReady = createEngine(sampleRate, bufferSize);
-
-            Log.v("OpenSLEngineController", "engine creat. fin " + isEngineReady);
-
-            Toast.makeText(context, "" + isEngineReady, Toast.LENGTH_SHORT).show();
-
-        } else {
-
-            Log.v("OpenSLEngineController", "not support");
-
-
-            Toast.makeText(context, "This app is not supported for your device.", Toast.LENGTH_SHORT).show();
-
-        }
+        isEngineReady = createEngine(sampleRate, framesPerBuffer);
     }
 
     public void setOn(boolean onOff) {

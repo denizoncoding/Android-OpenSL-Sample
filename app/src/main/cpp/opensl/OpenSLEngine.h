@@ -55,9 +55,6 @@ private:
 
     SLresult setPcmInterfaces();
 
-    int sampleRate;
-
-    int bufferSize;
 };
 
 

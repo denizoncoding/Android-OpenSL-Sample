@@ -20,13 +20,12 @@
 
 package com.denizoncoding.androidopenslsample;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.media.AudioManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -43,19 +42,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isOn = false;
 
 
+    @SuppressLint("ObsoleteSdkInt")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
 
-//TODO: quit app
-//        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-//
-//            Toast.makeText(this, "This app is not supported for your device.", Toast.LENGTH_SHORT).show();
-//
-//            return;
-//        }
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+
+            Toast.makeText(this, "This app is not supported for your device.", Toast.LENGTH_LONG).show();
+
+            finish();
+
+            return;
+        }
 
         createController();
 
@@ -90,7 +91,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
 
-        controller.destroy();
+        if (controller != null) {
+
+            controller.destroy();
+        }
+
         super.onDestroy();
     }
 

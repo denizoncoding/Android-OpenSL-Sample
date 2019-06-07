@@ -23,84 +23,71 @@
 #define DEBUG_TAG "OpenSLEngine:"
 #define MILLIHERTZ_IN_HERTZ 1000
 
-
 SLAndroidSimpleBufferQueueItf pcmBufferQueue;
 uint8_t *out_buffer;
-bool temporaryOnOff = false;
+int sampleRate;
+int bufferSize;
+bool playState = false;
+double phase = 0;
 
 void
 bufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
 
 
-    for (int i = 0; i < (1762); i++) {
+    for (int i = 0; i < bufferSize; i++) {
 
-        if (temporaryOnOff) {
-            int j = (i / 80) % 2;
+        if (playState) {
 
-            if (j == 0) {
-                out_buffer[i] = static_cast<uint8_t>(232);
-            } else {
-                out_buffer[i] = static_cast<uint8_t>(0);
-            }
+            phase += 0.06265;
+
+            if (phase > 6.28) phase -= 6.28;
+
+            out_buffer[i] = 32768 - (1000 * sin(phase));
+
         } else {
 
             out_buffer[i] = static_cast<uint8_t>(0);
         }
     }
 
-    SLresult result;
+    SLresult result = (*pcmBufferQueue)->Enqueue(pcmBufferQueue, out_buffer, bufferSize);
 
-    result = (*pcmBufferQueue)->Enqueue(pcmBufferQueue, out_buffer, 441);
-
-    if (SL_RESULT_SUCCESS != result) {
-
-        __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Sound error");
-    }
+//    if (SL_RESULT_SUCCESS != result) {
+//
+//        __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Sound error");
+//    }
 }
 
 bool OpenSLEngine::createEngine() {
 
     SLresult result;
 
-    __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine creation is started.");
+    result = result & slCreateEngine(&slEngineObject, 0, NULL, 0, NULL, NULL);
 
-    result = slCreateEngine(&slEngineObject, 0, NULL, 0, NULL, NULL);
+    result = result & (*slEngineObject)->Realize(slEngineObject, SL_BOOLEAN_FALSE);
 
-    if (result != SL_RESULT_SUCCESS) {
+    result = result &
+             (*slEngineObject)->GetInterface(slEngineObject, SL_IID_ENGINE, &slEngineInterface);
 
-        __android_log_print(ANDROID_LOG_ERROR, DEBUG_TAG, "Engine creation is failed.");
+    if (result == SL_RESULT_SUCCESS) {
+
+        __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine creation finished SUCCESSFULLY.");
+
+        return true;
+
+    } else {
+
         return false;
     }
 
-    result = (*slEngineObject)->Realize(slEngineObject, SL_BOOLEAN_FALSE);
-
-
-    if (result != SL_RESULT_SUCCESS) {
-
-        __android_log_print(ANDROID_LOG_ERROR, DEBUG_TAG, "Engine realization is failed.");
-        return false;
-    }
-
-    result = (*slEngineObject)->GetInterface(slEngineObject, SL_IID_ENGINE, &slEngineInterface);
-
-
-    if (result != SL_RESULT_SUCCESS) {
-
-        __android_log_print(ANDROID_LOG_ERROR, DEBUG_TAG, "Engine Interface getting is failed.");
-        return false;
-    }
-
-    __android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Engine creation finished SUCCESSFULLY.");
-
-    return true;
 }
 
-bool OpenSLEngine::createAudioPlayer(int sampleRate, int bufferSize) {
+bool OpenSLEngine::createAudioPlayer(int sampleRate_, int bufferSize_) {
 
     SLresult result;
 
-    this->sampleRate = sampleRate;
-    this->bufferSize = bufferSize;
+    sampleRate = sampleRate_;
+    bufferSize = bufferSize_ * 0.02;
 
     result = result & generateOutputBuffer();
 
@@ -148,15 +135,13 @@ SLresult OpenSLEngine::setBufferQueue() {
             SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
             2};
 
-    //TODO: sampleRate from external
     SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,
-            2,
-            SL_SAMPLINGRATE_44_1,
-//            ((SLuint32) sampleRate) * MILLIHERTZ_IN_HERTZ,
+            1,
+            (SLuint32) (sampleRate * MILLIHERTZ_IN_HERTZ),
             SL_PCMSAMPLEFORMAT_FIXED_16,
             SL_PCMSAMPLEFORMAT_FIXED_16,
-            SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+            SL_SPEAKER_FRONT_CENTER,
             SL_BYTEORDER_LITTLEENDIAN
     };
 
@@ -213,8 +198,7 @@ SLresult OpenSLEngine::setEnviromentalReverb() {
 
 SLresult OpenSLEngine::generateOutputBuffer() {
 
-    //TODO: buffersize from external
-    out_buffer = (uint8_t *) malloc(static_cast<size_t>(44100 * 2 * 0.2f));
+    out_buffer = (uint8_t *) malloc(bufferSize);
 
     return SL_RESULT_SUCCESS;
 }
@@ -240,5 +224,5 @@ bool OpenSLEngine::destroyEngine() {
 
 void OpenSLEngine::setOnOff(bool onOff) {
 
-    temporaryOnOff = onOff;
+    playState = onOff;
 }
